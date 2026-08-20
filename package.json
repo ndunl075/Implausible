@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "tracker:build": "node tracker/build.mjs",
     "tracker:size": "node tracker/build.mjs --check",
-    "test": "node --test \"test/**/*.test.mjs\"",
+    "test": "node --disable-warning=ExperimentalWarning --import ./scripts/ts-hooks.mjs --test",
     "seed": "node scripts/seed.mjs"
   },
   "dependencies": {
