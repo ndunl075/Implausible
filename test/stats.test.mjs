@@ -11,9 +11,8 @@ process.env.IMPLAUSIBLE_SALT_PATH = path.join(dir, 'salt.json');
 
 const { config } = await import('../src/lib/config.ts');
 const { closeDb, query } = await import('../src/lib/db.ts');
-const { getStats, realtimeVisitors, windowFor, isPeriod } = await import(
-  '../src/lib/stats.ts'
-);
+const { METRICS, getMetric, getStats, isMetric, isPeriod, realtimeVisitors, windowFor } =
+  await import('../src/lib/stats.ts');
 
 const DOMAIN = 'shop.example.com';
 const NOW = Date.UTC(2026, 7, 20, 12, 0, 0);
@@ -338,4 +337,113 @@ test('returns aggregates only, never rows', async () => {
     'totals',
   ]);
   assert.ok(!('events' in stats) && !('rows' in stats));
+});
+
+/* ------------------------------- metrics --------------------------------- */
+
+test('accepts every documented metric and rejects anything else', () => {
+  for (const metric of METRICS) assert.equal(isMetric(metric), true, metric);
+  assert.equal(isMetric('visitors'), true);
+  assert.equal(isMetric('returning_visitors'), false, 'not a metric this project has');
+  assert.equal(isMetric(null), false);
+});
+
+test('a named scalar returns just that total, with its comparison', async () => {
+  await clear();
+  await add({ visitor: 'a', session: 'sa', minutesAgo: 30 });
+  await add({ visitor: 'b', session: 'sb', minutesAgo: 20 });
+  await add({ visitor: 'old', session: 'so', minutesAgo: 30 * 60 });
+
+  const result = await getMetric(DOMAIN, 'visitors', '24h', NOW);
+  assert.equal(result.kind, 'scalar');
+  assert.equal(result.value, 2);
+  assert.equal(result.previous, 1, 'the window before, for comparison');
+});
+
+test('every scalar metric resolves to a finite number', async () => {
+  await clear();
+  await add({ visitor: 'a', session: 'sa', minutesAgo: 30 });
+  await add({ visitor: 'a', session: 'sa', minutesAgo: 20, pathname: '/x' });
+
+  for (const metric of [
+    'visitors',
+    'pageviews',
+    'sessions',
+    'bounce_rate',
+    'avg_duration',
+    'views_per_visit',
+  ]) {
+    const result = await getMetric(DOMAIN, metric, '24h', NOW);
+    assert.equal(result.kind, 'scalar', metric);
+    assert.ok(Number.isFinite(result.value), `${metric} should be finite`);
+  }
+});
+
+test('a named breakdown returns just those rows', async () => {
+  await clear();
+  await add({ pathname: '/popular', visitor: 'a', session: 'sa', source: 'Google' });
+  await add({ pathname: '/quiet', visitor: 'b', session: 'sb', source: 'Google' });
+
+  const pages = await getMetric(DOMAIN, 'pages', '24h', NOW);
+  assert.equal(pages.kind, 'breakdown');
+  assert.deepEqual(
+    pages.rows.map((r) => r.name).sort(),
+    ['/popular', '/quiet'],
+  );
+
+  const sources = await getMetric(DOMAIN, 'sources', '24h', NOW);
+  assert.deepEqual(
+    sources.rows.map((r) => r.name),
+    ['Google'],
+  );
+});
+
+test('every breakdown metric resolves to rows', async () => {
+  await clear();
+  await add({ visitor: 'a', session: 'sa' });
+
+  for (const metric of ['pages', 'sources', 'countries', 'devices', 'browsers', 'os']) {
+    const result = await getMetric(DOMAIN, metric, '24h', NOW);
+    assert.equal(result.kind, 'breakdown', metric);
+    assert.ok(Array.isArray(result.rows), metric);
+  }
+});
+
+test('the timeseries metric matches the one inside the full payload', async () => {
+  await clear();
+  await add({ minutesAgo: 90 });
+
+  const single = await getMetric(DOMAIN, 'timeseries', '24h', NOW);
+  const full = await getStats(DOMAIN, '24h', NOW);
+
+  assert.equal(single.kind, 'timeseries');
+  assert.deepEqual(single.points, full.timeseries, 'one metric, one definition');
+});
+
+test('a named scalar matches the same figure in the full payload', async () => {
+  await clear();
+  for (let i = 0; i < 4; i++) await add({ visitor: `v${i}`, session: `s${i}` });
+
+  const single = await getMetric(DOMAIN, 'bounce_rate', '24h', NOW);
+  const full = await getStats(DOMAIN, '24h', NOW);
+  assert.equal(single.value, full.totals.bounceRate);
+});
+
+test('metric=all is still the whole payload', async () => {
+  const result = await getMetric(DOMAIN, 'all', '24h', NOW);
+  assert.equal(result.kind, 'stats');
+  assert.equal(result.stats.domain, DOMAIN);
+  assert.ok(Array.isArray(result.stats.timeseries));
+});
+
+test('no single metric can return a row-level identifier', async () => {
+  await clear();
+  await add({ visitor: 'secret-visitor', session: 'secret-session' });
+
+  for (const metric of METRICS) {
+    const result = await getMetric(DOMAIN, metric, '24h', NOW);
+    const serialised = JSON.stringify(result);
+    assert.ok(!serialised.includes('secret-visitor'), metric);
+    assert.ok(!serialised.includes('secret-session'), metric);
+  }
 });

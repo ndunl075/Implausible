@@ -1,0 +1,51 @@
+# Implausible — one-command self-host.
+#
+#   cp .env.example .env   # set IMPLAUSIBLE_ALLOWED_DOMAINS
+#   docker compose up -d
+#
+# Caddy terminates TLS, obtains certificates automatically, and sets
+# X-Forwarded-For — which Implausible needs, because it hashes the address it
+# sees and an unproxied deployment would hash the proxy's instead.
+
+services:
+  implausible:
+    build: .
+    image: implausible:latest
+    restart: unless-stopped
+    environment:
+      # Comma-separated. Traffic for anything else is rejected at ingest.
+      IMPLAUSIBLE_ALLOWED_DOMAINS: ${IMPLAUSIBLE_ALLOWED_DOMAINS:?set this in .env}
+      IMPLAUSIBLE_RATE_LIMIT: ${IMPLAUSIBLE_RATE_LIMIT:-120}
+      # Optional local GeoLite2 file, mounted read-only below.
+      IMPLAUSIBLE_GEOIP_PATH: ${IMPLAUSIBLE_GEOIP_PATH:-}
+    volumes:
+      # Load-bearing. Without it the salt is regenerated on every restart and
+      # a day of session continuity goes with it.
+      - implausible-data:/data
+      # Uncomment once you have downloaded a GeoLite2-Country.mmdb, and set
+      # IMPLAUSIBLE_GEOIP_PATH=/geoip/GeoLite2-Country.mmdb in .env.
+      # - ./geoip:/geoip:ro
+    expose:
+      - '3000'
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      ANALYTICS_HOST: ${ANALYTICS_HOST:?set this in .env}
+      DASHBOARD_USER: ${DASHBOARD_USER:-admin}
+      DASHBOARD_PASSWORD_HASH: ${DASHBOARD_PASSWORD_HASH:?run: docker run --rm caddy:2-alpine caddy hash-password}
+    depends_on:
+      - implausible
+
+volumes:
+  implausible-data:
+  caddy-data:
+  caddy-config:

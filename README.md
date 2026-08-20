@@ -126,9 +126,20 @@ pageviews, bounce rate, average session duration, a timeseries, and top pages,
 sources, countries, devices, browsers and operating systems. There is no
 parameter, and no code path, that returns a single row.
 
-`&metric=realtime` returns just the last five minutes, because the dashboard
-polls that every five seconds and running the full query set at that rate to
-update one number would be wasteful.
+`metric` selects what comes back. Omitted, it is `all`. Naming one metric runs
+only the query behind it, which is what makes the dashboard's five-second
+realtime poll cheap enough to be honest about.
+
+| `metric` | Returns |
+|---|---|
+| `all` | Everything below, in one response |
+| `realtime` | Visitors in the last five minutes |
+| `visitors`, `pageviews`, `sessions`, `bounce_rate`, `avg_duration`, `views_per_visit` | One total, with the previous period alongside it |
+| `timeseries` | The chart series for the period |
+| `pages`, `sources`, `countries`, `devices`, `browsers`, `os` | A ranked table |
+
+Asking for a metric this project refuses to have returns a `400` listing the
+ones it does.
 
 ### What "visitors" means over more than a day
 
@@ -191,13 +202,25 @@ docker run -d --name implausible   -p 3000:3000   -v implausible-data:/data   -e
 **Mount a volume at `/data`.** Without one, the salt is regenerated on every
 restart and a day of session continuity is lost with it.
 
+### With Docker Compose, behind TLS
+
+`docker compose up -d --build` brings up Implausible with Caddy in front,
+which obtains certificates, sets `X-Forwarded-For`, and password-protects the
+dashboard while leaving the tracker endpoints public.
+
+**[DEPLOYING.md](DEPLOYING.md) is the full walkthrough** — DNS, the snippet, a
+verification checklist, GeoIP, backups and upgrades.
+
 ### Things to get right
 
-- **Put it behind a reverse proxy** that sets `X-Forwarded-For`. Exposed
-  directly, that header is spoofable — which costs accuracy but cannot leak
-  anything, since the address is never stored in any form.
+- **Put it behind a reverse proxy** that sets `X-Forwarded-For`. Implausible
+  hashes the address it is handed; without the header every visitor hashes to
+  the proxy and the visitor count collapses to one. Exposed directly the header
+  is spoofable, which costs accuracy but cannot leak anything, since the address
+  is never stored in any form.
 - **v0 has no authentication.** The dashboard is readable by anyone who can
-  reach it. Restrict it at the proxy until v2 adds auth.
+  reach it. The supplied Caddy and nginx configs split the public tracker
+  endpoints from the private dashboard for exactly this reason.
 - `GET /api/health` reports storage, queue depth, whether GeoIP is active, and
   how long until the next salt rotation — so you can confirm rotation is
   actually happening rather than take it on faith.

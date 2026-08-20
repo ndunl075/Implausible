@@ -1,15 +1,31 @@
 /**
- * GET /api/stats?domain=…&period=24h|7d|30d&metric=all|realtime
+ * GET /api/stats?domain=…&period=24h|7d|30d&metric=…
  *
  * Aggregates only. Nothing this route can return carries a visitor ID, a
  * session ID, or a single row — see stats.ts.
  *
- * `metric=realtime` exists because the dashboard polls it every five seconds.
- * Running the full set of queries at that rate to update one number would be
- * wasteful, so the poll gets its own cheap path.
+ * `metric` selects what comes back. Omitted, it is `all`: the whole payload the
+ * dashboard renders. Naming one metric runs only the query behind it, which is
+ * what makes the five-second realtime poll cheap enough to be honest about.
+ *
+ *   metric=all              everything below, in one response
+ *   metric=realtime         visitors in the last five minutes
+ *   metric=visitors         |
+ *   metric=pageviews        |
+ *   metric=sessions         |  a single total, with the previous period
+ *   metric=bounce_rate      |  alongside it for comparison
+ *   metric=avg_duration     |
+ *   metric=views_per_visit  |
+ *   metric=timeseries       the chart series for the period
+ *   metric=pages            |
+ *   metric=sources          |
+ *   metric=countries        |  a ranked table
+ *   metric=devices          |
+ *   metric=browsers         |
+ *   metric=os               |
  */
 import { isAllowedDomain } from '@/lib/config';
-import { getStats, isPeriod, realtimeVisitors } from '@/lib/stats';
+import { METRICS, getMetric, isMetric, isPeriod } from '@/lib/stats';
 
 // DuckDB is a native module, so this cannot run on the edge runtime.
 export const runtime = 'nodejs';
@@ -35,11 +51,8 @@ export async function GET(request: Request): Promise<Response> {
   if (!isAllowedDomain(domain)) return json({ error: 'unknown domain' }, 404);
 
   const metric = params.get('metric') ?? 'all';
-  if (metric === 'realtime') {
-    return json({ domain, realtime: await realtimeVisitors(domain) });
-  }
-  if (metric !== 'all') {
-    return json({ error: 'metric must be all or realtime' }, 400);
+  if (!isMetric(metric)) {
+    return json({ error: 'unknown metric', supported: METRICS }, 400);
   }
 
   const period = params.get('period') ?? '24h';
@@ -47,5 +60,26 @@ export async function GET(request: Request): Promise<Response> {
     return json({ error: 'period must be 24h, 7d or 30d' }, 400);
   }
 
-  return json(await getStats(domain, period));
+  const result = await getMetric(domain, metric, period);
+
+  // The full payload keeps its own shape, so an existing client that never
+  // passed `metric` sees exactly what it saw before.
+  if (result.kind === 'stats') return json(result.stats);
+
+  // Realtime has no period: it is always the last five minutes, and saying
+  // otherwise in the response would imply a window that was never applied.
+  if (result.kind === 'realtime') {
+    return json({ domain, metric, realtime: result.realtime });
+  }
+
+  const envelope = { domain, metric, period };
+
+  switch (result.kind) {
+    case 'scalar':
+      return json({ ...envelope, value: result.value, previous: result.previous });
+    case 'timeseries':
+      return json({ ...envelope, points: result.points });
+    case 'breakdown':
+      return json({ ...envelope, rows: result.rows });
+  }
 }

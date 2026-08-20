@@ -94,10 +94,18 @@ Returns aggregates only — never row-level data:
 | App + API | Next.js (API routes) |
 | DB | DuckDB (embedded, zero-config) |
 | GeoIP | MaxMind GeoLite2 `.mmdb`, local file |
-| Charts | Recharts or uPlot |
+| Charts | Hand-drawn SVG — see note |
 | Tracker | Vanilla JS, no deps, size-checked in CI |
 
 No external API keys anywhere in the stack. If a task appears to need one, that task is out of scope.
+
+**Note on charts.** This originally read "Recharts or uPlot". The chart ended up
+hand-drawn in SVG instead, for three reasons: the salt-rotation markers are not
+a feature any charting library has, the hairline instrument look meant fighting
+a library's defaults on every element, and a project whose headline claim is a
+1 KB tracker should not ship 100 KB of chart code to draw one area. It is ~230
+lines with no dependencies, in `src/components/Chart.tsx`. Revisit if the
+dashboard ever needs chart types beyond a filled line.
 
 ---
 

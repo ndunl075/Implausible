@@ -1,0 +1,30 @@
+# Implausible behind Caddy.
+#
+# Two things are happening here. Caddy sets X-Forwarded-For, which Implausible
+# needs — it hashes the address it is given, and without a proxy header it
+# would hash the proxy. And the tracker endpoints are split from the dashboard,
+# because v0 has no authentication of its own: the ingest path must be open to
+# the world, while the dashboard must not be.
+
+{$ANALYTICS_HOST} {
+	encode gzip zstd
+
+	# Public: the tracker script and the two ingest paths. These are hit by
+	# every visitor to the measured site and cannot be behind a password.
+	@public path /i.js /api/i /api/event
+	handle @public {
+		reverse_proxy implausible:3000
+	}
+
+	# Everything else — the dashboard, /api/stats and /api/health — is private.
+	# /api/health is included deliberately: it reports total event counts, and
+	# that is nobody's business but yours. If a load balancer needs to reach it
+	# unauthenticated, move /api/health into the @public matcher above and
+	# accept that trade.
+	handle {
+		basic_auth {
+			{$DASHBOARD_USER} {$DASHBOARD_PASSWORD_HASH}
+		}
+		reverse_proxy implausible:3000
+	}
+}
