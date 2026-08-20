@@ -83,6 +83,31 @@ leaves your server** — the file is read from disk.
 
 ---
 
+## Reading the numbers
+
+`GET /api/stats?domain=…&period=24h|7d|30d` returns aggregates only — visitors,
+pageviews, bounce rate, average session duration, a timeseries, and top pages,
+sources, countries, devices, browsers and operating systems. There is no
+parameter, and no code path, that returns a single row.
+
+`&metric=realtime` returns just the last five minutes, because the dashboard
+polls that every five seconds and running the full query set at that rate to
+update one number would be wasteful.
+
+### What "visitors" means over more than a day
+
+Visitor IDs are derived from a salt that rotates every 24 hours, so **the same
+person on Monday and Tuesday counts twice.** A 7-day visitor count is the sum of
+daily uniques, not the number of distinct people.
+
+This is not an approximation waiting to be fixed. It is the direct consequence
+of never storing anything that could tell those two rows apart, and the
+dashboard says so rather than quietly implying otherwise. Every tool that
+reports a "true" 30-day unique count is keeping something that survives the
+month.
+
+---
+
 ## Architecture
 
 ```
