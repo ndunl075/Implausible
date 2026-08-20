@@ -1,0 +1,13 @@
+# Normalize line endings so contributors on Windows, macOS and Linux see the
+# same diffs. Text files are stored LF in the repo and checked out natively.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.mmdb binary
+*.duckdb binary
+
+package-lock.json linguist-generated=true
