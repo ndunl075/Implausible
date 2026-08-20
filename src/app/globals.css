@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+/*
+ * Implausible design tokens.
+ * Dark-first instrumentation aesthetic: near-black canvas, hairline rules,
+ * tabular numerals, one warm signal accent. Deliberately not indigo-on-white —
+ * this project has its own identity (see CONTRIBUTING.md).
+ */
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Cascadia Mono",
+    Menlo, Consolas, "Liberation Mono", monospace;
+
+  --color-signal: #e8b339;
+  --color-signal-dim: #8a6a1f;
+  --color-cyan: #4cc9d4;
+  --color-violet: #9d8df1;
+  --color-rose: #ef7d8e;
+}
+
+:root {
+  color-scheme: light dark;
+
+  --ink: #14161a;
+  --ink-2: #4a5058;
+  --ink-3: #767d87;
+  --paper: #fbfaf8;
+  --paper-2: #ffffff;
+  --rule: #e3e0da;
+  --rule-2: #efece6;
+  --accent: #b8801a;
+  --accent-soft: rgba(232, 179, 57, 0.16);
+  --grid: rgba(20, 22, 26, 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #eceae5;
+    --ink-2: #9aa0a8;
+    --ink-3: #6b7178;
+    --paper: #0c0d10;
+    --paper-2: #131519;
+    --rule: #232629;
+    --rule-2: #1a1d21;
+    --accent: #e8b339;
+    --accent-soft: rgba(232, 179, 57, 0.12);
+    --grid: rgba(236, 234, 229, 0.05);
+  }
+}
+
+* {
+  border-color: var(--rule);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv02", "cv03", "cv04";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Numbers in a dashboard should never reflow as they tick. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

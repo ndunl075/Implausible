@@ -1,0 +1,42 @@
+{
+  "name": "implausible",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Privacy-first web analytics. No cookies, no persistent IDs, no cross-day tracking.",
+  "scripts": {
+    "dev": "npm run tracker:build && next dev",
+    "build": "npm run tracker:build && next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "tracker:build": "node tracker/build.mjs",
+    "tracker:size": "node tracker/build.mjs --check",
+    "test": "node --test \"test/**/*.test.mjs\"",
+    "seed": "node scripts/seed.mjs"
+  },
+  "dependencies": {
+    "@duckdb/node-api": "^1.5.5-r.4",
+    "maxmind": "^5.0.7",
+    "next": "16.3.1",
+    "react": "19.1.1",
+    "react-dom": "19.1.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@next/eslint-plugin-next": "^16.3.1",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^22.15.3",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "esbuild": "^0.25.0",
+    "eslint": "^10.8.1",
+    "globals": "^17.11.0",
+    "postcss": "^8.5.26",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.67.0"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  }
+}

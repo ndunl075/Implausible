@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # The "< 1 KB tracker" claim is on the README, so it is a build gate.
+      - name: Tracker size budget
+        run: npm run tracker:size
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  privacy-invariants:
+    name: Privacy invariants
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No client-side storage in the tracker
+        run: |
+          if grep -nE 'document\.cookie|localStorage|sessionStorage|indexedDB' tracker/src/*.js; then
+            echo "::error::Tracker must not use cookies or client-side storage (invariant 4)."
+            exit 1
+          fi
+          echo "OK: tracker uses no client-side storage."
+      - name: No raw IP column in the schema
+        run: |
+          if grep -nviE 'never|no raw|not stored|discard' src/lib/schema.sql 2>/dev/null | grep -nE '\bip\b|ip_address|remote_addr'; then
+            echo "::error::Schema must not contain a raw IP column (invariant 1)."
+            exit 1
+          fi
+          echo "OK: no raw IP column."
