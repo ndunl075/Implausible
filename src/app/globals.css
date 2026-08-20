@@ -2,9 +2,17 @@
 
 /*
  * Implausible design tokens.
- * Dark-first instrumentation aesthetic: near-black canvas, hairline rules,
- * tabular numerals, one warm signal accent. Deliberately not indigo-on-white —
- * this project has its own identity (see CONTRIBUTING.md).
+ *
+ * The concept is an instrument panel, not a SaaS dashboard: a calibrated
+ * measuring device with hairline rules, tabular numerals and one warm phosphor
+ * accent. The product's whole claim is that it deliberately cannot know
+ * certain things, and a readout that looks like laboratory equipment carries
+ * that better than another indigo-on-white card grid.
+ *
+ * No webfont is loaded. Not an oversight — a privacy tool that phones a font
+ * CDN on every dashboard view, handing the operator's address to a third
+ * party, would contradict invariant 6 in its own UI. Character comes from the
+ * mono/sans pairing, wide tracking on labels, and size contrast instead.
  */
 
 @theme {
@@ -12,12 +20,6 @@
     "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Cascadia Mono",
     Menlo, Consolas, "Liberation Mono", monospace;
-
-  --color-signal: #e8b339;
-  --color-signal-dim: #8a6a1f;
-  --color-cyan: #4cc9d4;
-  --color-violet: #9d8df1;
-  --color-rose: #ef7d8e;
 }
 
 :root {
@@ -26,28 +28,51 @@
   --ink: #14161a;
   --ink-2: #4a5058;
   --ink-3: #767d87;
-  --paper: #fbfaf8;
-  --paper-2: #ffffff;
-  --rule: #e3e0da;
-  --rule-2: #efece6;
-  --accent: #b8801a;
-  --accent-soft: rgba(232, 179, 57, 0.16);
-  --grid: rgba(20, 22, 26, 0.06);
+  --paper: #f7f5f1;
+  --paper-2: #fffefc;
+  --rule: #ded9d1;
+  --rule-2: #ebe7e0;
+  --accent: #a9741a;
+  --accent-2: #c8901f;
+  --accent-soft: rgba(169, 116, 26, 0.12);
+  --accent-ghost: rgba(169, 116, 26, 0.05);
+  --live: #1c8c58;
+  --grid: rgba(20, 22, 26, 0.055);
+  --shadow: 0 1px 2px rgba(20, 22, 26, 0.05), 0 8px 24px -12px rgba(20, 22, 26, 0.14);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --ink: #eceae5;
-    --ink-2: #9aa0a8;
-    --ink-3: #6b7178;
-    --paper: #0c0d10;
-    --paper-2: #131519;
-    --rule: #232629;
-    --rule-2: #1a1d21;
+    --ink-2: #969ca4;
+    --ink-3: #666c74;
+    --paper: #0a0b0d;
+    --paper-2: #111316;
+    --rule: #212428;
+    --rule-2: #191c1f;
     --accent: #e8b339;
-    --accent-soft: rgba(232, 179, 57, 0.12);
-    --grid: rgba(236, 234, 229, 0.05);
+    --accent-2: #f0c65e;
+    --accent-soft: rgba(232, 179, 57, 0.14);
+    --accent-ghost: rgba(232, 179, 57, 0.05);
+    --live: #35d48a;
+    --grid: rgba(236, 234, 229, 0.045);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px -16px rgba(0, 0, 0, 0.7);
   }
+}
+
+/* Expose the palette to Tailwind so utilities follow the theme swap above. */
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-rule: var(--rule);
+  --color-rule-2: var(--rule-2);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-accent-soft: var(--accent-soft);
+  --color-live: var(--live);
 }
 
 * {
@@ -62,15 +87,99 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-sans);
-  font-feature-settings: "cv02", "cv03", "cv04";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /*
+   * A faint engraved grid, the way graph paper sits under a plotted trace.
+   * Two hairline gradients rather than an image, so it costs nothing and
+   * follows the theme.
+   */
+  background-image:
+    linear-gradient(to right, var(--grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+  background-size: 64px 64px;
+  background-attachment: fixed;
 }
 
-/* Numbers in a dashboard should never reflow as they tick. */
+/* Numbers in a live dashboard must never reflow as they tick. */
 .tnum {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
+}
+
+/* The small caps-and-tracking label used throughout the instrument panel. */
+.legend {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.panel {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  box-shadow: var(--shadow);
+}
+
+/* ------------------------------- motion ---------------------------------- */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  70%,
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+@keyframes sweep {
+  from {
+    stroke-dashoffset: var(--len);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes flash {
+  from {
+    background-color: var(--accent-soft);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+.rise {
+  animation: rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.pulse-ring {
+  animation: ping 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Marks the moment the realtime figure changes, so a tick is visible even if
+ * you were not watching the digits. */
+.tick-flash {
+  animation: flash 1.1s ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -82,4 +191,11 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Keyboard focus should be obvious on an instrument. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
 }

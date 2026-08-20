@@ -98,6 +98,23 @@ leaves your server** — the file is read from disk.
 
 ---
 
+## The dashboard
+
+A single page: a realtime counter that polls every five seconds, a timeseries
+chart, four stat cards with period-over-period change, and tabbed breakdowns
+for pages, sources, countries, devices, browsers and operating systems.
+
+On the 24-hour and 7-day views the chart draws a hairline at every UTC
+midnight, labelled **salt rotated** — the exact moments every visitor ID before
+it stopped being connectable to anything after. It is the one claim in this
+project that is usually made in a privacy policy, drawn as a chart annotation
+instead.
+
+The dashboard loads **no external resources**: no webfont, no CDN, no
+analytics-on-the-analytics. A privacy tool that hands a font host the
+operator's address on every page view would be contradicting itself in its own
+UI.
+
 ## Reading the numbers
 
 `GET /api/stats?domain=…&period=24h|7d|30d` returns aggregates only — visitors,
