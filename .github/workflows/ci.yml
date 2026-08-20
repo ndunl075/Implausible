@@ -47,17 +47,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: No client-side storage in the tracker
+
+      # Invariant 4: no cookies or client-side storage of any kind.
+      - name: Tracker writes nothing to the client
         run: |
           if grep -nE 'document\.cookie|localStorage|sessionStorage|indexedDB' tracker/src/*.js; then
             echo "::error::Tracker must not use cookies or client-side storage (invariant 4)."
             exit 1
           fi
           echo "OK: tracker uses no client-side storage."
-      - name: No raw IP column in the schema
+
+      # Invariant 1: raw IP is never persisted.
+      - name: Schema has no raw IP column
         run: |
-          if grep -nviE 'never|no raw|not stored|discard' src/lib/schema.sql 2>/dev/null | grep -nE '\bip\b|ip_address|remote_addr'; then
+          if [ -f src/lib/schema.sql ] && \
+             grep -nEi '^[[:space:]]*(ip|ip_address|ip_addr|remote_addr|client_ip)[[:space:]]+' src/lib/schema.sql; then
             echo "::error::Schema must not contain a raw IP column (invariant 1)."
             exit 1
           fi
           echo "OK: no raw IP column."
+
+      # Invariant 1: raw IP is never logged either. Word boundaries matter here
+      # so that "description" and friends do not trip the check.
+      - name: No IP reaches a log line
+        run: |
+          if grep -rnE 'console\.(log|warn|error|info|debug)\([^)]*\b(ip|ipAddress|rawIp|remoteAddr|clientIp)\b' src/; then
+            echo "::error::An IP address must never reach a log line (invariant 1)."
+            exit 1
+          fi
+          echo "OK: no IP in any log statement."
