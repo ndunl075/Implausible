@@ -76,3 +76,31 @@ jobs:
             exit 1
           fi
           echo "OK: no IP in any log statement."
+
+  browser:
+    name: Tracker in a real browser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Locate Chrome
+        run: |
+          if ! command -v google-chrome >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y chromium-browser
+          fi
+          echo "CHROME_PATH=$(command -v google-chrome || command -v chromium-browser)" >> "$GITHUB_ENV"
+
+      # Loads the built tracker into real Chrome from a second origin and
+      # asserts the rows that come out the other end. The unit tests prove the
+      # logic; this proves the artifact.
+      - name: Verify the tracker end to end
+        run: npm run verify:browser

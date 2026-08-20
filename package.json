@@ -12,7 +12,8 @@
     "tracker:build": "node tracker/build.mjs",
     "tracker:size": "node tracker/build.mjs --check",
     "test": "node --disable-warning=ExperimentalWarning --import ./scripts/ts-hooks.mjs --test",
-    "seed": "node --disable-warning=ExperimentalWarning --import ./scripts/ts-hooks.mjs scripts/seed.mjs"
+    "seed": "node --disable-warning=ExperimentalWarning --import ./scripts/ts-hooks.mjs scripts/seed.mjs",
+    "verify:browser": "node scripts/verify-browser.mjs"
   },
   "dependencies": {
     "@duckdb/node-api": "^1.5.5-r.4",

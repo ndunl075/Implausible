@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Implausible tracker fixture</title>
+    <!-- The snippet exactly as the README tells people to paste it. -->
+    <script defer data-domain="demo.localhost" src="http://127.0.0.1:3210/i.js"></script>
+  </head>
+  <body>
+    <h1>Tracker fixture</h1>
+    <p>Used by the browser integration test. Not part of the app.</p>
+    <button id="go">Navigate</button>
+    <script>
+      // Stands in for a client-side router: pushState with no page load.
+      document.getElementById('go').addEventListener('click', () => {
+        history.pushState({}, '', '/products/widget');
+      });
+    </script>
+  </body>
+</html>
