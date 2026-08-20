@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+.github
+data
+*.duckdb
+*.duckdb.wal
+*.mmdb
+.env
+.env.local
+*.local
+npm-debug.log*
+README.md
+CONTRIBUTING.md
+SECURITY.md
+CODE_OF_CONDUCT.md

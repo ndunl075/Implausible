@@ -1,5 +1,9 @@
 # Implausible
 
+[![CI](https://github.com/ndunl075/Implausible/actions/workflows/ci.yml/badge.svg)](https://github.com/ndunl075/Implausible/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![tracker](https://img.shields.io/badge/tracker-695%20B-e8b339)](tracker/src/tracker.js)
+
 **Privacy-first web analytics.** No cookies, no persistent identifiers, no way to
 follow a visitor from one day into the next.
 
@@ -163,6 +167,42 @@ There are **no third-party API keys anywhere in the stack.** See
 [`implausible-architecture.md`](implausible-architecture.md) for the full design.
 
 ---
+
+## Deploying it
+
+Implausible is one Node process and one file on disk. There is no database
+server, no queue, no object store, and no API key to provision.
+
+### Directly
+
+```bash
+npm ci
+npm run build
+IMPLAUSIBLE_ALLOWED_DOMAINS=yoursite.com IMPLAUSIBLE_DB_PATH=/var/lib/implausible/events.duckdb IMPLAUSIBLE_SALT_PATH=/var/lib/implausible/salt.json npm start
+```
+
+### With Docker
+
+```bash
+docker build -t implausible .
+docker run -d --name implausible   -p 3000:3000   -v implausible-data:/data   -e IMPLAUSIBLE_ALLOWED_DOMAINS=yoursite.com   implausible
+```
+
+**Mount a volume at `/data`.** Without one, the salt is regenerated on every
+restart and a day of session continuity is lost with it.
+
+### Things to get right
+
+- **Put it behind a reverse proxy** that sets `X-Forwarded-For`. Exposed
+  directly, that header is spoofable — which costs accuracy but cannot leak
+  anything, since the address is never stored in any form.
+- **v0 has no authentication.** The dashboard is readable by anyone who can
+  reach it. Restrict it at the proxy until v2 adds auth.
+- `GET /api/health` reports storage, queue depth, whether GeoIP is active, and
+  how long until the next salt rotation — so you can confirm rotation is
+  actually happening rather than take it on faith.
+- Back up by copying the `.duckdb` file. **Do not back up `salt.json`**; a
+  restored salt is a salt that outlived its 24 hours.
 
 ## Invariants
 

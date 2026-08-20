@@ -1,0 +1,4 @@
+# The dashboard reports on someone else's traffic and has no business in a
+# search index. The tracker endpoint is not a page and has nothing to crawl.
+User-agent: *
+Disallow: /
