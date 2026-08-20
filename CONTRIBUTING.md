@@ -45,6 +45,7 @@ Useful scripts:
 | `npm run lint` | ESLint |
 | `npm run tracker:size` | Report the minified tracker size and fail if over budget |
 | `npm run seed` | Generate realistic local data so the dashboard isn't empty |
+| `npm run verify:browser` | Load the built tracker into real Chrome and check the rows it produces (needs `npm run build` first) |
 
 ## Pull requests
 
@@ -53,6 +54,9 @@ Useful scripts:
 - Touching `tracker/src/` means you own the byte budget. `npm run tracker:size`
   prints how much headroom is left.
 - Touching ingest means adding a test that proves no raw IP reaches storage.
+- Touching the tracker or the ingest route means running `npm run verify:browser`.
+  The unit tests prove the logic in a stubbed DOM; only that script proves the
+  artifact still works in a browser.
 - New dependencies need a reason in the PR description. The tracker takes none,
   ever.
 
