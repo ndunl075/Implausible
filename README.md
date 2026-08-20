@@ -59,6 +59,21 @@ To collect from a real site, add one line before `</head>`:
 <script defer data-domain="yoursite.com" src="https://your-host/i.js"></script>
 ```
 
+### Ingest behaviour
+
+The endpoint answers **202 immediately** and writes afterwards — a visitor's
+page load never waits on the database. Bots are dropped before the write,
+requests are rate limited per hashed IP, and the `domain` is checked against
+`IMPLAUSIBLE_ALLOWED_DOMAINS` before the request costs anything.
+
+Responses carry no body. A rejection that explained itself would tell a prober
+how the allowlist is configured.
+
+Implausible expects to run **behind a reverse proxy** that sets
+`X-Forwarded-For`. Exposed directly, that header is spoofable — which costs
+accuracy, but cannot leak anything, because the address is never stored in any
+form.
+
 ### Optional: country attribution
 
 Country lookup uses a local MaxMind GeoLite2 `.mmdb` file. Download one with a
@@ -71,10 +86,14 @@ leaves your server** — the file is read from disk.
 ## Architecture
 
 ```
-i.js ──POST──▶ /api/event ──▶ ingest queue ──▶ DuckDB
-                                                 │
-                     dashboard ◀── /api/stats ◀──┘
+i.js ──POST──▶ /api/i ──▶ ingest queue ──▶ DuckDB
+                                             │
+                 dashboard ◀── /api/stats ◀──┘
 ```
+
+The tracker posts to `/api/i` rather than `/api/event`, because ad blockers
+match the latter by name. `/api/event` stays mounted and behaves identically,
+so either path works.
 
 | Layer | Choice |
 |---|---|

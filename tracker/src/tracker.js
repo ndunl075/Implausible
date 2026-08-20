@@ -7,13 +7,16 @@
  * Collects: domain, pathname, referrer, viewport width. Nothing else.
  * Writes: nothing. No cookies, no storage, no fingerprinting APIs.
  *
+ * Posts to /api/i rather than /api/event: ad blockers match the latter by
+ * name. Both paths are mounted server-side.
+ *
  * Usage:
  *   <script defer data-domain="yoursite.com" src="https://host/i.js"></script>
  */
 (function (win, doc, nav) {
   var el = doc.currentScript;
   var domain = el.getAttribute('data-domain') || location.hostname;
-  var api = el.getAttribute('data-api') || new URL(el.src).origin + '/api/event';
+  var api = el.getAttribute('data-api') || new URL(el.src).origin + '/api/i';
   var hist = win.history;
   var last;
 
