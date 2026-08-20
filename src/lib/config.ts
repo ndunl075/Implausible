@@ -19,7 +19,18 @@ function int(value: string | undefined, fallback: number): number {
 }
 
 const root = process.cwd();
-const resolve = (p: string) => (path.isAbsolute(p) ? p : path.join(root, p));
+
+/**
+ * Resolves a configured path against the working directory.
+ *
+ * The turbopackIgnore marker is load-bearing. Without it the bundler sees a
+ * filesystem join it cannot statically scope, gives up, and traces the entire
+ * project into the server output — shipping every source file and the public
+ * folder along with it. These paths are runtime configuration pointing at a
+ * data directory, so there is nothing here for the bundler to include.
+ */
+const resolve = (p: string) =>
+  path.isAbsolute(p) ? p : path.join(/* turbopackIgnore: true */ root, p);
 
 export const config = {
   /** Domains permitted to send events. Anything else is rejected at ingest. */

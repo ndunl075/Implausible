@@ -95,7 +95,15 @@ test('sends exactly the four documented fields and nothing more', async () => {
 
 test('posts to the origin the script was served from', async () => {
   const { sent } = await run();
-  assert.equal(sent[0].url, 'https://metrics.example.net/api/event');
+  assert.equal(sent[0].url, 'https://metrics.example.net/api/i');
+});
+
+test('avoids the endpoint path ad blockers match by name', async () => {
+  const { sent } = await run();
+  assert.ok(
+    !/\/api\/event|analytics|track|collect|pageview|telemetry/.test(sent[0].url),
+    `default endpoint should be neutral, got ${sent[0].url}`,
+  );
 });
 
 test('falls back to fetch with keepalive when sendBeacon is unavailable', async () => {
