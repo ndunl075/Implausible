@@ -53,6 +53,21 @@ npm run dev
 
 Then open <http://localhost:3000>.
 
+An empty dashboard is impossible to judge, so there is a generator for local
+traffic:
+
+```bash
+npm run seed -- --days 30        # a month of realistic history
+npm run seed -- --help           # options
+```
+
+It goes through the real derivation path — a fresh salt per simulated day,
+the same `visitorId()` the server uses, real user-agent strings through the
+real parser — so the seeded data has the same shape the live pipeline
+produces. Including the part where a visitor on day 1 and the same visitor on
+day 2 are unrelated IDs. Addresses come from the RFC 5737 documentation
+ranges, so nothing in it is anyone's.
+
 To collect from a real site, add one line before `</head>`:
 
 ```html
